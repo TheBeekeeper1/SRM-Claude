@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🍯 Honey SRM
 
-## Getting Started
+**Supplier Relationship Management System för Swedish Bee Company**
 
-First, run the development server:
+Ett fullständigt SRM-system för att hantera honungsleverantörer, kontakthistorik, supply opportunities och leveranser.
+
+## ✨ Funktioner
+
+- 🔐 **Säker autentisering** via Supabase Auth
+- 📊 **Dashboard** med KPI:er och övervakning av uppföljningsdatum
+- 🔍 **Leverantörslista** med sökning och avancerad filtrering
+- 📋 **Leverantörsdetaljer** med kontakthistorik, opportunities och leveranser
+- 📈 **Realtids-uppdateringar** av data
+- 📱 **Responsiv design** för Desktop, Tablet och Mobile
+
+## 🚀 Snabbstart
+
+Se [QUICKSTART.md](./QUICKSTART.md) för steg-för-steg instruktioner.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Öppna http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📚 Dokumentation
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **[QUICKSTART.md](./QUICKSTART.md)** - 5 minuter för att komma igång
+- **[SETUP.md](./SETUP.md)** - Detaljerad installations- och konfigurationsguide
+- **[DATABASE_NOTES.md](./DATABASE_NOTES.md)** - Databasreferens och queries
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Teknologi
 
-## Learn More
+- Next.js 16, React 19, TypeScript
+- Tailwind CSS 4
+- Supabase (PostgreSQL + Auth)
+- date-fns för datumhantering
 
-To learn more about Next.js, take a look at the following resources:
+## 📦 Installation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. `npm install`
+2. Skapa Supabase-projekt och kör `supabase-schema.sql`
+3. `cp .env.local.example .env.local` och uppdatera credentials
+4. `npm run dev`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🎯 Funktion
 
-## Deploy on Vercel
+### Dashboard
+- Visa KPI:er (leverantörer, pipeline, levererad volym)
+- Lista leverantörer som behöver följas upp inom 14 dagar
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Leverantörer
+- Sök och filtrera
+- Se detaljrad information
+- Hantera kontakthistorik
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Kontakthantering
+- Lägg till kontakter
+- Sätt uppföljningsdatum
+- Se historik
+
+## 📝 Licens
+
+Privat för Swedish Bee Company
