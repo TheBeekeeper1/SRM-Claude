@@ -7,7 +7,13 @@ import Link from 'next/link'
 import { formatDistanceToNow, parseISO, isBefore, addDays } from 'date-fns'
 import { sv } from 'date-fns/locale'
 
-type SupplierWithLatestContact = Supplier & {
+type SupplierWithLatestContact = {
+  id: string
+  name: string
+  company_name?: string
+  email?: string
+  phone?: string
+  status: string
   latest_contact: ContactHistory | null
 }
 
