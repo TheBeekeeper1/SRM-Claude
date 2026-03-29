@@ -91,7 +91,7 @@ export default function DashboardPage() {
           const twoWeeksFromNow = addDays(today, 14)
 
           const needsFollowUp = suppliersWithContact.filter((s) => {
-            if (!s.latest_contact?.follow_up_date) return false
+            if (!s.latest_contact || !s.latest_contact.follow_up_date) return false
             const followUpDate = parseISO(s.latest_contact.follow_up_date)
             return (
               isBefore(followUpDate, twoWeeksFromNow) &&
