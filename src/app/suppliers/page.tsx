@@ -20,17 +20,18 @@ export default function SuppliersPage() {
       try {
         setLoading(true)
         const { data, error: fetchError } = await supabase
-          .from('suppliers')
+          .from<Supplier>('suppliers')
           .select('*')
           .order('company_name', { ascending: true })
 
         if (fetchError) throw fetchError
 
-        setSuppliers(data || [])
+        const suppliersData = (data || []) as Supplier[]
+        setSuppliers(suppliersData)
 
         // Extract unique categories
         const uniqueCategories = Array.from(
-          new Set((data || []).map((s) => s.category).filter(Boolean))
+          new Set(suppliersData.map((s) => s.category).filter(Boolean))
         ) as string[]
         setCategories(uniqueCategories.sort())
       } catch (err) {
@@ -202,6 +203,7 @@ export default function SuppliersPage() {
                                     ? 'bg-gray-100 text-gray-800'
                                     : 'bg-blue-100 text-blue-800'
                               }`}
+                            >
                               {supplier.status === 'active'
                                 ? 'Aktiv'
                                 : supplier.status === 'inactive'
