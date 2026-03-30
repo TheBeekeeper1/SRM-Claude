@@ -20,7 +20,7 @@ export default function SuppliersPage() {
       try {
         setLoading(true)
         const { data, error: fetchError } = await supabase
-          .from<Supplier>('suppliers')
+          .from('suppliers')
           .select('*')
           .order('company_name', { ascending: true })
 
