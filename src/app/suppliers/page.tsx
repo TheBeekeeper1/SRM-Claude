@@ -151,7 +151,10 @@ export default function SuppliersPage() {
                           Email
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                          Kategori
+                          Ort
+                        </th>
+                        <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                          URL
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                           Status
@@ -174,7 +177,21 @@ export default function SuppliersPage() {
                             {supplier.email || '-'}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
-                            {supplier.category || '-'}
+                            {supplier.location || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {supplier.url ? (
+                              <a
+                                href={supplier.url}
+                                target="_blank"
+                                rel="noreferrer noopener"
+                                className="text-amber-600 hover:text-amber-700 underline"
+                              >
+                                {supplier.url}
+                              </a>
+                            ) : (
+                              '-'
+                            )}
                           </td>
                           <td className="px-6 py-4 text-sm">
                             <span
@@ -185,7 +202,6 @@ export default function SuppliersPage() {
                                     ? 'bg-gray-100 text-gray-800'
                                     : 'bg-blue-100 text-blue-800'
                               }`}
-                            >
                               {supplier.status === 'active'
                                 ? 'Aktiv'
                                 : supplier.status === 'inactive'
