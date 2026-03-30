@@ -10,8 +10,6 @@ import {
   Delivery,
 } from '@/lib/supabase'
 import { ProtectedRoute } from '@/components/protected-route'
-import { formatDistanceToNow, parseISO } from 'date-fns'
-import { sv } from 'date-fns/locale'
 
 export default function SupplierDetailPage() {
   const params = useParams()
@@ -156,15 +154,23 @@ export default function SupplierDetailPage() {
         {/* Header */}
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{supplier.name}</h1>
-            <p className="text-gray-600 mt-1">{supplier.company_name}</p>
+            <h1 className="text-3xl font-bold text-gray-900">{supplier.company_name}</h1>
+            <p className="text-gray-600 mt-1">{supplier.contact_person || 'Ingen kontaktperson registrerad'}</p>
           </div>
-          <button
-            onClick={() => router.push('/suppliers')}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition"
-          >
-            ← Tillbaka
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => router.push(`/suppliers/${supplierId}/edit`)}
+              className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition"
+            >
+              Redigera
+            </button>
+            <button
+              onClick={() => router.push('/suppliers')}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition"
+            >
+              ← Tillbaka
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -194,11 +200,28 @@ export default function SupplierDetailPage() {
                 <p className="text-sm text-gray-600">Kategori</p>
                 <p className="text-gray-900">{supplier.category || '-'}</p>
               </div>
+              <div>
+                <p className="text-sm text-gray-600">Webbsida</p>
+                {supplier.url ? (
+                  <p>
+                    <a
+                      href={supplier.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-amber-600 hover:text-amber-700 underline"
+                    >
+                      {supplier.url}
+                    </a>
+                  </p>
+                ) : (
+                  <p className="text-gray-900">-</p>
+                )}
+              </div>
             </div>
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Avtalsdetaljer</h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Volymuppgifter</h2>
             <div className="space-y-3">
               <div>
                 <p className="text-sm text-gray-600">Status</p>
@@ -219,30 +242,52 @@ export default function SupplierDetailPage() {
                 </span>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Årlig volym</p>
+                <p className="text-sm text-gray-600">Antal bisamhällen</p>
+                <p className="text-gray-900">{supplier.num_bee_colonies || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Potentiell volym (kg)</p>
                 <p className="text-gray-900">
-                  {supplier.annual_volume
-                    ? supplier.annual_volume.toLocaleString('sv-SE')
+                  {supplier.potential_volume ? supplier.potential_volume.toLocaleString('sv-SE') : '-'}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Bekräftad volym (kg)</p>
+                <p className="text-gray-900">
+                  {supplier.confirmed_volume ? supplier.confirmed_volume.toLocaleString('sv-SE') : '-'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Dates */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Kontakthistorik</h2>
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm text-gray-600">Datum senaste kontakt</p>
+                <p className="text-gray-900">
+                  {supplier.last_contact_date
+                    ? new Date(supplier.last_contact_date).toLocaleDateString('sv-SE')
                     : '-'}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Avtalsstart</p>
+                <p className="text-sm text-gray-600">Datum uppföljning</p>
                 <p className="text-gray-900">
-                  {supplier.contract_start_date
-                    ? new Date(supplier.contract_start_date).toLocaleDateString('sv-SE')
-                    : '-'}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Avtalsslut</p>
-                <p className="text-gray-900">
-                  {supplier.contract_end_date
-                    ? new Date(supplier.contract_end_date).toLocaleDateString('sv-SE')
+                  {supplier.follow_up_date
+                    ? new Date(supplier.follow_up_date).toLocaleDateString('sv-SE')
                     : '-'}
                 </p>
               </div>
             </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Anteckningar</h2>
+            <div className="text-gray-900 whitespace-pre-wrap">{supplier.notes || '-'}</div>
           </div>
         </div>
 
@@ -330,10 +375,7 @@ export default function SupplierDetailPage() {
                           {contact.contact_type}
                         </p>
                         <p className="text-sm text-gray-600">
-                          {formatDistanceToNow(parseISO(contact.contact_date), {
-                            addSuffix: true,
-                            locale: sv,
-                          })}
+                          {new Date(contact.contact_date).toLocaleDateString('sv-SE')}
                         </p>
                       </div>
                       {contact.follow_up_date && (

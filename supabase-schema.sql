@@ -3,17 +3,21 @@
 -- Suppliers table
 CREATE TABLE suppliers (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name VARCHAR(255) NOT NULL,
-  company_name VARCHAR(255),
+  company_name VARCHAR(255) NOT NULL,
+  contact_person VARCHAR(255),
   email VARCHAR(255),
   phone VARCHAR(20),
   location VARCHAR(255),
   category VARCHAR(100),
   status VARCHAR(50) DEFAULT 'active',
-  annual_volume DECIMAL(10, 2),
-  contract_start_date DATE,
-  contract_end_date DATE,
+  url VARCHAR(500),
+  num_bee_colonies INT,
+  potential_volume DECIMAL(10, 2),
+  confirmed_volume DECIMAL(10, 2),
+  last_contact_date DATE,
+  follow_up_date DATE,
   notes TEXT,
+  honey_analysis TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );

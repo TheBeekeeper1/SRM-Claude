@@ -22,7 +22,7 @@ export default function SuppliersPage() {
         const { data, error: fetchError } = await supabase
           .from('suppliers')
           .select('*')
-          .order('name', { ascending: true })
+          .order('company_name', { ascending: true })
 
         if (fetchError) throw fetchError
 
@@ -52,8 +52,8 @@ export default function SuppliersPage() {
     if (searchText) {
       filtered = filtered.filter(
         (s) =>
-          s.name.toLowerCase().includes(searchText.toLowerCase()) ||
-          (s.company_name && s.company_name.toLowerCase().includes(searchText.toLowerCase())) ||
+          s.company_name.toLowerCase().includes(searchText.toLowerCase()) ||
+          (s.contact_person && s.contact_person.toLowerCase().includes(searchText.toLowerCase())) ||
           (s.email && s.email.toLowerCase().includes(searchText.toLowerCase()))
       )
     }
@@ -142,10 +142,10 @@ export default function SuppliersPage() {
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                          Namn
+                          Företag
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                          Företag
+                          Kontaktperson
                         </th>
                         <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                           Email
@@ -165,10 +165,10 @@ export default function SuppliersPage() {
                       {filteredSuppliers.map((supplier) => (
                         <tr key={supplier.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                            {supplier.name}
+                            {supplier.company_name}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
-                            {supplier.company_name || '-'}
+                            {supplier.contact_person || '-'}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
                             {supplier.email || '-'}

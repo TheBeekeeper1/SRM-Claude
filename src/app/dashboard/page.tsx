@@ -1,29 +1,28 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase, Supplier, ContactHistory, Delivery } from '@/lib/supabase'
+import { supabase, Supplier } from '@/lib/supabase'
 import { ProtectedRoute } from '@/components/protected-route'
 import Link from 'next/link'
-import { formatDistanceToNow, parseISO, isBefore, addDays } from 'date-fns'
-import { sv } from 'date-fns/locale'
 
-type SupplierWithLatestContact = {
+type SupplierFollowUp = {
   id: string
-  name: string
-  company_name?: string
-  email?: string
-  phone?: string
-  status: string
-  latest_contact: ContactHistory | null
+  company_name: string
+  contact_person: string
+  email: string
+  potential_volume: number
+  confirmed_volume: number
+  follow_up_date: string
 }
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
     total_suppliers: 0,
-    pipeline_volume: 0,
-    delivered_volume: 0,
+    potential_volume: 0,
+    confirmed_volume: 0,
+    follow_ups_needed: 0,
   })
-  const [suppliersToFollowUp, setSuppliersToFollowUp] = useState<SupplierWithLatestContact[]>([])
+  const [suppliersToFollowUp, setSuppliersToFollowUp] = useState<SupplierFollowUp[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -32,81 +31,65 @@ export default function DashboardPage() {
       try {
         setLoading(true)
 
-        // Get total count of suppliers
-        const { count: supplierCount } = await supabase
+        // Get all suppliers (not filtered by status)
+        const { data: suppliers, count: supplierCount, error: suppliersError } = await supabase
           .from('suppliers')
-          .select('id', { count: 'exact' })
-          .eq('status', 'active')
+          .select('*', { count: 'exact' })
 
-        // Get pipeline volume (sum of estimated_value from supply_opportunities)
-        const { data: opportunities } = await supabase
-          .from('supply_opportunities')
-          .select('estimated_value')
-          .eq('status', 'open')
+        if (suppliersError) throw suppliersError
 
-        const pipelineVolume = opportunities?.reduce(
-          (sum, opp) => sum + (opp.estimated_value || 0),
-          0
-        ) || 0
+        // Calculate stats from suppliers table
+        let potentialVolume = 0
+        let confirmedVolume = 0
+        const needsFollowUpList: SupplierFollowUp[] = []
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const twoWeeksFromNow = new Date(today)
+        twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14)
 
-        // Get delivered volume (sum of price from deliveries in last 12 months)
-        const yearAgo = new Date()
-        yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+        if (suppliers) {
+          suppliers.forEach((supplier) => {
+            // Sum volumes
+            if (supplier.potential_volume) {
+              potentialVolume += supplier.potential_volume
+            }
+            if (supplier.confirmed_volume) {
+              confirmedVolume += supplier.confirmed_volume
+            }
 
-        const { data: deliveries } = await supabase
-          .from('deliveries')
-          .select('price')
-          .gte('delivery_date', yearAgo.toISOString().split('T')[0])
+            // Check if needs follow-up
+            if (
+              supplier.follow_up_date
+            ) {
+              const followUpDate = new Date(supplier.follow_up_date)
+              followUpDate.setHours(0, 0, 0, 0)
 
-        const deliveredVolume = deliveries?.reduce(
-          (sum, del) => sum + (del.price || 0),
-          0
-        ) || 0
+              // Follow-up is needed if the date is within 14 days and not in the past
+              if (followUpDate >= today && followUpDate <= twoWeeksFromNow) {
+                needsFollowUpList.push({
+                  id: supplier.id,
+                  company_name: supplier.company_name,
+                  contact_person: supplier.contact_person || '-',
+                  email: supplier.email || '-',
+                  potential_volume: supplier.potential_volume || 0,
+                  confirmed_volume: supplier.confirmed_volume || 0,
+                  follow_up_date: supplier.follow_up_date,
+                })
+              }
+            }
+          })
+        }
 
         setStats({
           total_suppliers: supplierCount || 0,
-          pipeline_volume: pipelineVolume,
-          delivered_volume: deliveredVolume,
+          potential_volume: potentialVolume,
+          confirmed_volume: confirmedVolume,
+          follow_ups_needed: needsFollowUpList.length,
         })
 
-        // Get suppliers that need follow-up within 14 days
-        const { data: suppliers } = await supabase
-          .from('suppliers')
-          .select('id, name, company_name, email, phone, status')
-          .eq('status', 'active')
-
-        if (suppliers) {
-          const suppliersWithContact = await Promise.all(
-            suppliers.map(async (supplier) => {
-              const { data: contacts } = await supabase
-                .from('contact_history')
-                .select('*')
-                .eq('supplier_id', supplier.id)
-                .order('contact_date', { ascending: false })
-                .limit(1)
-
-              return {
-                ...supplier,
-                latest_contact: contacts?.[0] || null,
-              }
-            })
-          )
-
-          // Filter suppliers that need follow-up within 14 days
-          const today = new Date()
-          const twoWeeksFromNow = addDays(today, 14)
-
-          const needsFollowUp = suppliersWithContact.filter((s) => {
-            if (!s.latest_contact || !s.latest_contact.follow_up_date) return false
-            const followUpDate = parseISO(s.latest_contact.follow_up_date)
-            return (
-              isBefore(followUpDate, twoWeeksFromNow) &&
-              isBefore(today, followUpDate)
-            )
-          })
-
-          setSuppliersToFollowUp(needsFollowUp)
-        }
+        setSuppliersToFollowUp(needsFollowUpList.sort(
+          (a, b) => new Date(a.follow_up_date).getTime() - new Date(b.follow_up_date).getTime()
+        ))
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred')
         console.error('Dashboard error:', err)
@@ -143,7 +126,7 @@ export default function DashboardPage() {
         )}
 
         {/* KPI Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6 border-t-4 border-amber-500">
             <div className="flex items-center justify-between">
               <div>
@@ -159,13 +142,9 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg shadow p-6 border-t-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Pipeline-volym</p>
+                <p className="text-gray-600 text-sm font-medium">Potentiell Volym</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {stats.pipeline_volume.toLocaleString('sv-SE', {
-                    style: 'currency',
-                    currency: 'SEK',
-                    maximumFractionDigits: 0,
-                  })}
+                  {stats.potential_volume.toLocaleString('sv-SE')} kg
                 </p>
               </div>
               <span className="text-4xl">📈</span>
@@ -175,16 +154,24 @@ export default function DashboardPage() {
           <div className="bg-white rounded-lg shadow p-6 border-t-4 border-blue-500">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-medium">Levererad Volym (12m)</p>
+                <p className="text-gray-600 text-sm font-medium">Bekräftad Volym</p>
                 <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {stats.delivered_volume.toLocaleString('sv-SE', {
-                    style: 'currency',
-                    currency: 'SEK',
-                    maximumFractionDigits: 0,
-                  })}
+                  {stats.confirmed_volume.toLocaleString('sv-SE')} kg
                 </p>
               </div>
               <span className="text-4xl">📦</span>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6 border-t-4 border-yellow-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-600 text-sm font-medium">Uppföljningar (14d)</p>
+                <p className="text-3xl font-bold text-gray-900 mt-2">
+                  {stats.follow_ups_needed}
+                </p>
+              </div>
+              <span className="text-4xl">📅</span>
             </div>
           </div>
         </div>
@@ -196,7 +183,7 @@ export default function DashboardPage() {
               Leverantörer att följa upp ({suppliersToFollowUp.length})
             </h2>
             <p className="text-gray-600 text-sm mt-1">
-              Leverantörer som behöver följas upp inom 14 dagar
+              Leverantörer med uppföljningsdatum inom 14 dagar
             </p>
           </div>
 
@@ -206,16 +193,22 @@ export default function DashboardPage() {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                      Namn
-                    </th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
                       Företag
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                      Senaste Kontakt
+                      Kontaktperson
                     </th>
                     <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                      Uppföljningsdatum
+                      Email
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                      Potentiell (kg)
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                      Bekräftad (kg)
+                    </th>
+                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
+                      Uppföljning
                     </th>
                     <th className="px-6 py-3 text-right text-sm font-semibold text-gray-900">
                       Åtgärd
@@ -226,32 +219,24 @@ export default function DashboardPage() {
                   {suppliersToFollowUp.map((supplier) => (
                     <tr key={supplier.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {supplier.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
                         {supplier.company_name}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-600">
-                        {supplier.latest_contact?.contact_date
-                          ? formatDistanceToNow(
-                              parseISO(supplier.latest_contact.contact_date),
-                              {
-                                addSuffix: true,
-                                locale: sv,
-                              }
-                            )
-                          : 'Ingen kontakt'}
+                        {supplier.contact_person}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {supplier.email}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {supplier.potential_volume.toLocaleString('sv-SE')}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {supplier.confirmed_volume.toLocaleString('sv-SE')}
                       </td>
                       <td className="px-6 py-4 text-sm">
-                        {supplier.latest_contact?.follow_up_date ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            {new Date(
-                              supplier.latest_contact.follow_up_date
-                            ).toLocaleDateString('sv-SE')}
-                          </span>
-                        ) : (
-                          '-'
-                        )}
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          {new Date(supplier.follow_up_date).toLocaleDateString('sv-SE')}
+                        </span>
                       </td>
                       <td className="px-6 py-4 text-sm text-right">
                         <Link

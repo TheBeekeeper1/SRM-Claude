@@ -11,17 +11,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 export type Supplier = {
   id: string
-  name: string
-  company_name?: string
+  company_name: string
+  contact_person?: string
   email?: string
   phone?: string
   location?: string
   category?: string
   status: string
-  annual_volume?: number
-  contract_start_date?: string
-  contract_end_date?: string
+  url?: string
+  num_bee_colonies?: number
+  potential_volume?: number
+  confirmed_volume?: number
+  last_contact_date?: string
+  follow_up_date?: string
   notes?: string
+  honey_analysis?: string
   created_at: string
   updated_at: string
 }
