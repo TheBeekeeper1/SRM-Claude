@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { supabase, Supplier } from '@/lib/supabase'
 import { ProtectedRoute } from '@/components/protected-route'
 
 export default function NewSupplierPage() {
@@ -39,7 +39,7 @@ export default function NewSupplierPage() {
 
     setLoading(true)
 
-    const { data, error: insertError } = await supabase
+    const { data, error: insertError } = (await supabase
       .from('suppliers')
       .insert([
         {
@@ -56,7 +56,8 @@ export default function NewSupplierPage() {
           notes: form.notes || null,
         },
       ])
-      .single()
+      .select('id')
+      .single()) as { data: Pick<Supplier, 'id'> | null; error: any }
 
     setLoading(false)
 
@@ -65,7 +66,7 @@ export default function NewSupplierPage() {
       return
     }
 
-    if (data?.id) {
+    if (data && 'id' in data) {
       router.push(`/suppliers/${data.id}`)
     } else {
       setError('Kunde inte skapa leverantör')
