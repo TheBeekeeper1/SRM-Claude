@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase, Supplier } from '@/lib/supabase'
 import { ProtectedRoute } from '@/components/protected-route'
 import Link from 'next/link'
@@ -23,8 +23,31 @@ export default function DashboardPage() {
     follow_ups_needed: 0,
   })
   const [suppliersToFollowUp, setSuppliersToFollowUp] = useState<SupplierFollowUp[]>([])
+  const [allSuppliers, setAllSuppliers] = useState<Supplier[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showResults, setShowResults] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const searchRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowResults(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const searchResults = searchQuery.trim()
+    ? allSuppliers.filter(
+        (s) =>
+          s.company_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (s.contact_person && s.contact_person.toLowerCase().includes(searchQuery.toLowerCase())) ||
+          (s.email && s.email.toLowerCase().includes(searchQuery.toLowerCase()))
+      ).slice(0, 8)
+    : []
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -37,6 +60,8 @@ export default function DashboardPage() {
           .select('*', { count: 'exact' })
 
         if (suppliersError) throw suppliersError
+
+        setAllSuppliers((suppliers as Supplier[]) || [])
 
         // Calculate stats from suppliers table
         let potentialVolume = 0
@@ -117,7 +142,82 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+
+          <div ref={searchRef} className="relative w-80">
+            <div className="relative">
+              <span className="absolute inset-y-0 left-3 flex items-center text-gray-400 pointer-events-none">
+                🔍
+              </span>
+              <input
+                type="text"
+                placeholder="Sök leverantör..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setShowResults(true)
+                }}
+                onFocus={() => setShowResults(true)}
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm"
+              />
+            </div>
+
+            {showResults && searchResults.length > 0 && (
+              <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 overflow-hidden">
+                {searchResults.map((supplier) => (
+                  <Link
+                    key={supplier.id}
+                    href={`/suppliers/${supplier.id}`}
+                    onClick={() => {
+                      setShowResults(false)
+                      setSearchQuery('')
+                    }}
+                    className="flex items-center justify-between px-4 py-3 hover:bg-amber-50 border-b border-gray-100 last:border-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{supplier.company_name}</p>
+                      {supplier.contact_person && (
+                        <p className="text-xs text-gray-500">{supplier.contact_person}</p>
+                      )}
+                    </div>
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        supplier.status === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : supplier.status === 'inactive'
+                            ? 'bg-gray-100 text-gray-800'
+                            : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      {supplier.status === 'active'
+                        ? 'Aktiv'
+                        : supplier.status === 'inactive'
+                          ? 'Inaktiv'
+                          : 'Prospect'}
+                    </span>
+                  </Link>
+                ))}
+                <Link
+                  href={`/suppliers?search=${encodeURIComponent(searchQuery)}`}
+                  onClick={() => {
+                    setShowResults(false)
+                    setSearchQuery('')
+                  }}
+                  className="block px-4 py-2 text-xs text-center text-amber-600 hover:bg-amber-50 font-medium"
+                >
+                  Visa alla resultat →
+                </Link>
+              </div>
+            )}
+
+            {showResults && searchQuery.trim() && searchResults.length === 0 && (
+              <div className="absolute top-full mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 px-4 py-3 text-sm text-gray-500">
+                Inga leverantörer hittades
+              </div>
+            )}
+          </div>
+        </div>
 
         {error && (
           <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
