@@ -6,10 +6,9 @@ import { useAuth } from '@/lib/auth-context'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { signIn, signUp } = useAuth()
+  const { signIn } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isSignUp, setIsSignUp] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -19,11 +18,7 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      if (isSignUp) {
-        await signUp(email, password)
-      } else {
-        await signIn(email, password)
-      }
+      await signIn(email, password)
       router.push('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
@@ -82,21 +77,10 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-amber-600 hover:bg-amber-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition"
           >
-            {loading ? 'Bearbetar...' : isSignUp ? 'Registrera' : 'Logga in'}
+            {loading ? 'Bearbetar...' : 'Logga in'}
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <button
-            onClick={() => {
-              setIsSignUp(!isSignUp)
-              setError('')
-            }}
-            className="w-full text-amber-600 hover:text-amber-700 font-medium text-sm"
-          >
-            {isSignUp ? 'Redan medlem? Logga in' : 'Ny medlem? Registrera'}
-          </button>
-        </div>
       </div>
     </div>
   )
